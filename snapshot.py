@@ -8,11 +8,11 @@ def snapshot(file_name="snap.jpg",cam_n = 0):
     cam = cv2.VideoCapture(cam_n)
     key = 0
     picture = cam.read()
-    while key != ord(" "):
+    while not key in [ord(" "),ord("q")]:
         ret, picture = cam.read()
-        cv2.imshow("Hit [SPACE] to capture", picture)
+        cv2.imshow("Hit [SPACE] to capture | q to quit", picture)
         key = cv2.waitKey(2) & 0xff
-    cv2.imwrite(file_name, picture)
+    if key == ord(" "):cv2.imwrite(file_name, picture)
     cv2.destroyWindow("Hit [SPACE] to capture")
     
 def main(argv):

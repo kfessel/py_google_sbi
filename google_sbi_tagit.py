@@ -6,7 +6,8 @@ config={"stopwordfilter":True,"Nimgres":80,"NThreads":5,"NTop":10}
 
 #Google does some filtering on the userangent (it does not like to be asked by CURL or just Mozilla/5.0)
 #useragent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.91 Safari/537.36'
-useragent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40'
+#useragent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40'
+useragent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.65 Safari/537.36'
 cookiejar = "kekstopf"
 
 def curl_get(url):
@@ -79,7 +80,13 @@ def imgresurlprocessor(url):
     '''
     import re
     page = curl_get(url)
-    descriptions = re.findall("<p class=il_n>([^<]*)</p>",page)
+    descriptions =  re.findall("<p class=il_n>([^<]*)</p>",page)
+    descriptions += re.findall('"s":"([^"]*)"',page)
+    #import hashlib
+    #f = open("page"+hashlib.md5(url).hexdigest()+".htm","w")
+    #f.write(page.encode('utf8'))
+    #f.close()
+    
     description = ''
     for i in descriptions:
       description += " " + i.lower()
@@ -132,7 +139,7 @@ def nameit(picture_buffer, hint=None):
     
     buffer = BytesIO()
     curl = pycurl.Curl()
-    
+    curl_get("https://www.google.com/ncr")
     headers = {}
     def decodeHeader(header_line):
         
@@ -209,16 +216,21 @@ def nameit(picture_buffer, hint=None):
       out=re.split('\W+',out,re.UNICODE)
     
     imgreses=config["Nimgres"]
+    #lf = open("logfile","w")
     
     if len(out2)<imgreses:
       #find the  similar pictures link and follow
       similarpicturesurl=re.search(r"\/search\?tbs=simg:[^\">]*",page)
       if similarpicturesurl:
             similarpicturesurl=similarpicturesurl.group(0)
-            similarpicturesurl="https://www.google.com"+sanatizegoogleurl(similarpicturesurl)
+            similarpicturesurl="https://www.google.com"+sanatizegoogleurl(similarpicturesurl)+"&gws_rd=cr"
             oldlen=len(out2)
-            
+            #lf.write( similarpicturesurl)
+
             simpage=curl_get(similarpicturesurl)
+            #sf = open("simpage.htm","w")
+            #sf.write(simpage.encode('utf8'))
+            #sf.close
             out2=[sanatizegoogleurl(url) for url in re.findall(r'http[^\"]*imgres[^\"]*',simpage)]
             
             for i in range(1, 20):
@@ -253,6 +265,7 @@ def nameit(picture_buffer, hint=None):
     #parallel version
     out4=[]
     imgresurls=out2[0:imgreses]
+    #lf.write(str(imgresurls))
     NThreads=config['NThreads']
     from multiprocessing import Pool
     print ("processing",len(imgresurls), "URLs using",  NThreads, "Threads",)
@@ -276,7 +289,7 @@ def nameit(picture_buffer, hint=None):
     out4=descriptions
     out5=Counter(descriptionwords).most_common(config['NTop'])
     out6=Counter(descriptionbigrams).most_common(config['NTop'])
-    
+    #lf.close
     return out,out5,out6
 
 
